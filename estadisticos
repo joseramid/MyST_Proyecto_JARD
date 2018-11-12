@@ -1,0 +1,110 @@
+# -- Borrar todos los elementos del environment
+rm(list=ls())
+mdir <- getwd()
+
+
+#PiP por covencionalidad va a ser .0001, en el cambio dolar euro
+#Se restan el precio de cierre, al precio de apertura, y lo multiplicas por el PiP.
+#esta diferencia, se llama PiP.
+
+
+# -- Establecer el sistema de medicion de la computadora
+Sys.setlocale(category = "LC_ALL", locale = "")
+
+# -- Huso horario
+Sys.setenv(tz="America/Monterrey", TZ="America/Monterrey")
+options(tz="America/Monterrey", TZ="America/Monterrey")
+
+# -- Cargar y/o instalar en automatico paquetes a utilizar -- #
+
+pkg <- c("base","downloader","dplyr","fBasics","forecast","grid",
+         "gridExtra","httr","jsonlite","lmtest","lubridate","moments",
+         "matrixStats", "PerformanceAnalytics","plyr","quantmod",
+         "reshape2","RCurl","RMySQL", "stats","scales","tseries",
+         "TTR","TSA","XML","xts","zoo")
+
+inst <- pkg %in% installed.packages()
+if(length(pkg[!inst]) > 0) install.packages(pkg[!inst])
+instpackages <- lapply(pkg, library, character.only=TRUE)
+
+# -- Cargar archivos desde GitHub -- #
+
+RawGitHub <- "https://raw.githubusercontent.com/IFFranciscoME/"
+ROandaAPI <- paste(RawGitHub,"ROandaAPI/master/ROandaAPI.R",sep="")
+downloader::source_url(ROandaAPI,prompt=FALSE,quiet=TRUE)
+
+# -- Parametros para usar API-OANDA
+
+# Tipo de cuenta practice/live
+OA_At <- "practice"
+# ID de cuenta
+OA_Ai <- 1742531
+# Token para llamadas a API
+OA_Ak <- "ada4a61b0d5bc0e5939365e01450b614-4121f84f01ad78942c46fc3ac777baa6" 
+# Hora a la que se considera "Fin del dia"
+OA_Da <- 17
+# Uso horario
+OA_Ta <- "America/Mexico_City"
+# Instrumento
+OA_In <- "USD_MXN"
+# Granularidad o periodicidad de los precios H4 = Cada 4 horas
+# S5, S10, S30, M1, 
+OA_Pr <- "D" #esto es lo unico que le puedes cambiarle
+# Multiplicador de precios para convertir a PIPS
+MultPip_MT1 <- 10000
+
+Precios_Oanda <- HisPrices(AccountType = OA_At, Granularity = OA_Pr,
+                           DayAlign = OA_Da, TimeAlign = OA_Ta, Token = OA_Ak,
+                           Instrument = OA_In, 
+                           Start = "2016-11-06", End = "2018-11-06", Count = NULL)
+
+library(quantmod)
+
+Close <- xts(x = Precios_Oanda$Close, order.by = Precios_Oanda$TimeStamp)
+
+chartSeries(Close)
+
+#ESTADISTICOS
+
+###Bollinger Bands
+## The examples below show the differences between using a
+## High-Low-Close series, and just a close series when
+## calculating Bollinger Bands.
+bbands.HLC <- BBands( Precios_Oanda[,c("High","Low","Close")] )
+bbands.close <- BBands( Precios_Oanda[,"Close"] )
+
+
+###SMA
+sma.20 <- SMA(Precios_Oanda[,"Close"], 20)
+
+
+###EMA
+ema.20 <- EMA(Precios_Oanda[,"Close"], 20)
+
+
+###ALMA
+alma <- ALMA(Precios_Oanda[,"Close"])
+
+
+###RSI
+price <- Precios_Oanda[,"Close"]
+rsi <- RSI(price)
+
+
+###Stochastic Oscillator
+stochOSC <- stoch(Precios_Oanda[,c("High","Low","Close")])
+stochWPR <- WPR(Precios_Oanda[,c("High","Low","Close")])
+plot(tail(stochOSC[,"fastK"], 100), type="l",
+     main="Fast %K and Williams %R", ylab="",
+     ylim=range(cbind(stochOSC, stochWPR), na.rm=TRUE) )
+lines(tail(stochWPR, 100), col="blue")
+lines(tail(1-stochWPR, 100), col="red", lty="dashed")
+stoch2MA <- stoch( Precios_Oanda[,c("High","Low","Close")],
+                   maType=list(list(SMA), list(EMA, wilder=TRUE), list(SMA)) )
+SMI3MA <- SMI(Precios_Oanda[,c("High","Low","Close")],
+              maType=list(list(SMA), list(EMA, wilder=TRUE), list(SMA)) )
+stochRSI <- stoch( RSI(Precios_Oanda[,"Close"]) )
+
+
+###MACD
+macd <- MACD( Precios_Oanda[,"Close"], 12, 26, 9, maType="EMA" )

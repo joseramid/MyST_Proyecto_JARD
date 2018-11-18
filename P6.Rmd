@@ -1,3 +1,14 @@
+---
+title: "Reporte estadístico de precio USD/MXN"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r PROYECTO, echo=FALSE, message=FALSE, warning=FALSE}
 # -- Borrar todos los elementos del environment
 rm(list=ls())
 mdir <- getwd()
@@ -57,6 +68,8 @@ Precios_Oanda <- HisPrices(AccountType = OA_At, Granularity = OA_Pr,
                            DayAlign = OA_Da, TimeAlign = OA_Ta, Token = OA_Ak,
                            Instrument = OA_In, 
                            Start = "2016-11-06", End = "2018-11-06", Count = NULL)
+
+library(quantmod)
 
 Close <- xts(x = Precios_Oanda$Close, order.by = Precios_Oanda$TimeStamp)
 
@@ -153,7 +166,7 @@ Candle <- ggplot(data=`Precios_Oanda`, aes(x=TimeStamp, y=Close)) +
   geom_ma(ma_fun = EMA, n = 21, linetype = 5, size = 1.25) +
   labs(title = "USD/MXN, 21 day exponential moving average",y="Closing Price", x="Date") +
   theme_tq()
-
+Candle
 
 ######### WMA
 library(tidyquant)
@@ -164,7 +177,7 @@ Candle <- ggplot(data=`Precios_Oanda`, aes(x=TimeStamp, y=Close)) +
   geom_ma(ma_fun = WMA, n = 21, linetype = 5, size = 1.25) +
   labs(title = "USD/MXN, 21 day weighted moving average",y="Closing Price", x="Date") +
   theme_tq()
-
+Candle
 
 ######### DEMA
 library(tidyquant)
@@ -175,4 +188,8 @@ Candle <- ggplot(data=`Precios_Oanda`, aes(x=TimeStamp, y=Close)) +
   geom_ma(ma_fun = DEMA, n = 21, linetype = 5, size = 1.25) +
   labs(title = "USD/MXN, 21 day double exponential moving average",y="Closing Price", x="Date") +
   theme_tq()
+Candle
+
+
+```
 
